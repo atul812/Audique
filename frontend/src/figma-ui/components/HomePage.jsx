@@ -15,6 +15,7 @@ export function HomePage({
   connectedDevices,
   onAddDevice,
   hasRecordingData,
+  onLogout,              // ✅ accept logout callback
 }) {
   return (
     <div
@@ -50,7 +51,17 @@ export function HomePage({
               <p className="text-gray-400 text-sm">AI-Powered Transcription</p>
             </div>
           </motion.div>
-          <ThemeToggle />
+
+          {/* Right side: theme + logout */}
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <button
+              onClick={onLogout}
+              className="px-4 py-2 bg-red-500/80 text-white rounded-xl hover:bg-red-600 transition"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       </header>
 
