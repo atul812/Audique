@@ -1,12 +1,12 @@
 // frontend/src/App.js
 import React, { useState } from "react";
 import { ThemeProvider } from "./figma-ui/components/ThemeProvider";
-import HomePage from "./figma-ui/components/HomePage";
-import DashboardPage from "./figma-ui/components/DashboardPage";
-import FlashcardsView from "./figma-ui/components/FlashcardsView";
-import SummaryView from "./figma-ui/components/SummaryView";
-import NotesView from "./figma-ui/components/NotesView";
-import TranscriptView from "./figma-ui/components/TranscriptView";
+import { HomePage } from "./figma-ui/components/HomePage";
+import { DashboardPage } from "./figma-ui/components/DashboardPage";
+import { FlashcardsView } from "./figma-ui/components/FlashcardsView";
+import { SummaryView } from "./figma-ui/components/SummaryView";
+import { NotesView } from "./figma-ui/components/NotesView";
+import { TranscriptView } from "./figma-ui/components/TranscriptView";
 
 // ✅ API Base URL for local + production
 const API_BASE_URL =
@@ -52,7 +52,7 @@ export default function App() {
     }
 
     const formData = new FormData();
-    formData.append("file", audioBlob, "audio.wav");
+    formData.append("audio", audioBlob, "recording.webm");
 
     try {
       // ---------------- TRANSCRIBE ----------------
