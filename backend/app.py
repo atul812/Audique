@@ -1,239 +1,163 @@
 import os
-import uuid
-from io import BytesIO
-from typing import Optional
+import io
+import tempfile
+from pathlib import Path
 
 from flask import Flask, request, jsonify, send_file
-from fpdf import FPDF
-import io
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
-
-import whisper
-from transformers import pipeline
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.units import inch
-from pydub import AudioSegment
-import torch
-
+from groq import Groq
+from fpdf import FPDF
 from dotenv import load_dotenv
-from supabase import create_client, Client
+load_dotenv()
 
+# -----------------------------------------------------------------------------
+# App & CORS
+# -----------------------------------------------------------------------------
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-# -------------------------------------------------------------------
-# Configuration
-# -------------------------------------------------------------------
-UPLOAD_FOLDER = "temp"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB
-
-# -------------------------------------------------------------------
-# Supabase configuration
-# -------------------------------------------------------------------
-load_dotenv()  # load variables from .env if present
-
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-SUPABASE_BUCKET = os.environ.get("SUPABASE_BUCKET", "recordings")
-
-supabase: Optional[Client] = None
-if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
-    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-    print("✅ Supabase client initialized")
-else:
-    print(
-        "⚠️ Supabase not fully configured "
-        "(missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY). "
-        "Audio will not be uploaded to cloud."
-    )
-
-
-def upload_audio_to_supabase(
-    file_bytes: bytes,
-    filename: str,
-    content_type: Optional[str] = None,
-) -> Optional[str]:
-    """
-    Upload raw audio bytes to Supabase Storage.
-    Returns the storage path, or None on failure.
-    Does NOT affect the normal API behaviour.
-    """
-    if supabase is None:
-        # Supabase not configured; silently skip
-        return None
-
-    if not content_type:
-        content_type = "audio/webm"
-
-    safe_name = secure_filename(filename) if filename else "recording.webm"
-    storage_path = f"recordings/{uuid.uuid4().hex}_{safe_name}"
-
-    file_like = BytesIO(file_bytes)
-
-    try:
-        supabase.storage.from_(SUPABASE_BUCKET).upload(
-            file=file_like,
-            path=storage_path,
-            file_options={"content-type": content_type},
-        )
-
-        # Optional: store a metadata row if you created a `recordings` table
-        try:
-            supabase.table("recordings").insert(
-                {"file_path": storage_path}
-            ).execute()
-        except Exception as e:
-            print("Supabase DB insert failed:", e)
-
-        print("✅ Uploaded audio to Supabase at", storage_path)
-        return storage_path
-    except Exception as e:
-        print("Supabase upload failed:", e)
-        return None
-
-
-# -------------------------------------------------------------------
-# Load models once at startup
-# -------------------------------------------------------------------
-print("🔥 Loading Whisper model...")
-whisper_model = whisper.load_model("base")
-print("✅ Whisper loaded")
-
-print("🔥 Loading summarization model...")
-summarizer = pipeline(
-    "summarization",
-    model="facebook/bart-large-cnn",
-    device=0 if torch.cuda.is_available() else -1,
+# -----------------------------------------------------------------------------
+# Groq client (you'll set GROQ_API_KEY in .env / Render)
+# -----------------------------------------------------------------------------
+groq_client = Groq(
+    api_key=os.environ.get("GROQ_API_KEY"),
 )
-print("✅ Summarizer loaded")
 
-
-@app.route("/health", methods=["GET"])
+# -----------------------------------------------------------------------------
+# Health check
+# -----------------------------------------------------------------------------
+@app.route("/", methods=["GET"])
 def health():
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "ok", "message": "Audique backend running"})
 
 
+# -----------------------------------------------------------------------------
+# /transcribe  -  uses Groq Whisper (replaces local openai-whisper)
+# -----------------------------------------------------------------------------
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
+    """
+    Expects: multipart/form-data with field 'audio'
+    Returns: JSON { "text": "<transcript>" }
+    """
+    if "audio" not in request.files:
+        return jsonify({"error": "No audio file uploaded"}), 400
+
+    audio_file = request.files["audio"]
+
+    if audio_file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    # Save the uploaded file to a temp path
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
+        temp_path = tmp.name
+        audio_file.save(temp_path)
+
     try:
-        if "audio" not in request.files:
-            return jsonify({"error": "No audio file"}), 400
-
-        file = request.files["audio"]
-        if file.filename == "":
-            return jsonify({"error": "Empty filename"}), 400
-
-        # Read bytes once so we can upload them to Supabase
-        file_bytes = file.read()
-        # Reset stream so Flask can still work with it if needed
-        file.stream.seek(0)
-
-        # Save uploaded file using the original extension if available
-        orig_name = secure_filename(file.filename)
-        _, ext = os.path.splitext(orig_name)
-        if not ext:
-            ext = ".webm"
-
-        filename = f"{uuid.uuid4().hex}{ext}"
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
-        file.save(filepath)
-
-        # 🔼 NEW: upload the original recording to Supabase (non-blocking)
-        try:
-            upload_audio_to_supabase(
-                file_bytes=file_bytes,
-                filename=file.filename,
-                content_type=file.mimetype,
+        # Groq Whisper transcription
+        # Docs: uses whisper-large-v3 / turbo models for STT 
+        with open(temp_path, "rb") as f:
+            transcription = groq_client.audio.transcriptions.create(
+                model="whisper-large-v3-turbo",
+                file=("recording.webm", f, audio_file.mimetype),
+                response_format="json",
             )
-        except Exception as e:
-            # Do not break transcription if upload fails
-            print("Error during Supabase upload:", e)
 
-        # Convert to WAV for Whisper — let pydub detect the format
-        wav_path = os.path.join(UPLOAD_FOLDER, f"{uuid.uuid4().hex}.wav")
-        audio = AudioSegment.from_file(filepath)
-        audio = audio.set_frame_rate(16000).set_channels(1)
-        audio.export(wav_path, format="wav")
+        # SDK returns an object with `.text`
+        text = getattr(transcription, "text", None)
+        if text is None and isinstance(transcription, dict):
+            text = transcription.get("text", "")
 
-        # Transcribe with Whisper
-        result = whisper_model.transcribe(wav_path)
-        text = result["text"].strip()
-
-        # Cleanup
-        os.remove(filepath)
-        os.remove(wav_path)
+        if not text:
+            return jsonify({"error": "Empty transcription from Groq"}), 500
 
         return jsonify({"text": text})
 
     except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        print("Groq transcription error:", e)
+        return jsonify({"error": "Transcription failed"}), 500
+
+    finally:
+        try:
+            os.remove(temp_path)
+        except OSError:
+            pass
 
 
+# -----------------------------------------------------------------------------
+# /summarize  -  uses Groq Llama-3.1 (replaces any OpenAI GPT usage)
+# -----------------------------------------------------------------------------
 @app.route("/summarize", methods=["POST"])
 def summarize():
+    """
+    Expects: JSON { "text": "<full transcript>" }
+    Returns: JSON { "summary": "<summary text>" }
+    """
+    data = request.get_json(silent=True) or {}
+    transcript_text = data.get("text", "")
+
+    if not transcript_text.strip():
+        return jsonify({"error": "No text provided"}), 400
+
+    prompt = (
+        "You are an AI assistant that writes clear, structured lecture summaries "
+        "for students.\n\n"
+        "Requirements:\n"
+        "1. Only use information from the transcript.\n"
+        "2. Use headings and bullet points where helpful.\n"
+        "3. Keep it concise but cover all key ideas.\n\n"
+        "Transcript:\n"
+        f"{transcript_text}\n\n"
+        "Now write the summary."
+    )
+
     try:
-        data = request.get_json()
-        text = data.get("text", "").strip()
+        # Groq Llama 3.1 8B – fast, good for summaries 
+        completion = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful AI that summarizes classroom lectures for students.",
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+            temperature=0.2,
+            max_tokens=800,
+        )
 
-        if not text:
-            return jsonify({"summary": ""})
-
-        # Split text into chunks if too long
-        max_chunk = 1000
-        chunks = []
-
-        while len(text) > max_chunk:
-            cutoff = text.rfind(".", 0, max_chunk)
-            if cutoff == -1:
-                cutoff = max_chunk
-            chunks.append(text[:cutoff])
-            text = text[cutoff:]
-        chunks.append(text)
-
-        # Summarize each chunk
-        summaries = []
-        for chunk in chunks:
-            if len(chunk.strip()) < 50:  # Skip very short chunks
-                continue
-
-            result = summarizer(
-                chunk,
-                max_length=150,
-                min_length=50,
-                do_sample=False,
-            )
-            summaries.append(result[0]["summary_text"])
-
-        # Format as bullet points
-        bullet_summary = "\n".join([f"• {s}" for s in summaries])
-
-        return jsonify({"summary": bullet_summary})
+        summary_text = completion.choices[0].message.content
+        return jsonify({"summary": summary_text})
 
     except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        print("Groq summarize error:", e)
+        return jsonify({"error": "Summary generation failed"}), 500
 
 
+# -----------------------------------------------------------------------------
+# /download-pdf  -  PDF export of summary (keeps your Summary → PDF button)
+# -----------------------------------------------------------------------------
 @app.route("/download-pdf", methods=["POST"])
 def download_pdf():
+    """
+    Expects: JSON { "summary": "<summary text>" }
+    Returns: PDF file download
+    """
+    data = request.get_json(silent=True) or {}
+    summary = (data.get("summary") or "").strip()
+
+    if not summary:
+        return jsonify({"error": "No summary text provided"}), 400
+
     try:
-        data = request.get_json()
-        summary = (data.get("summary") or "").strip()
-
-        if not summary:
-            return jsonify({"error": "No summary text provided"}), 400
-
-        # Create PDF in memory
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
         pdf.set_font("Arial", size=12)
 
-        # Simple wrapping: split by lines and paragraphs
         for paragraph in summary.split("\n\n"):
             for line in paragraph.split("\n"):
                 pdf.multi_cell(0, 8, txt=line)
@@ -252,6 +176,9 @@ def download_pdf():
         return jsonify({"error": "Failed to generate PDF"}), 500
 
 
+# -----------------------------------------------------------------------------
+# Main
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
-    print("🚀 Backend running on http://127.0.0.1:5000")
+    # For local dev; Render will use gunicorn app:app
     app.run(host="0.0.0.0", port=5000, debug=True)
