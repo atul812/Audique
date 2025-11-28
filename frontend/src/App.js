@@ -82,10 +82,23 @@ function App() {
         body: formData,
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        console.error("Transcribe error status:", response.status);
+        alert("Error while transcribing audio");
+        return;
+      }
 
-      if (data.text) {
-        const text = data.text;
+      const data = await response.json();
+      console.log("Transcribe response:", data);
+
+      // ✅ Accept multiple possible field names: text / transcript
+      const text =
+        data.text ||
+        data.transcript || // common alt key
+        data.result ||
+        "";
+
+      if (text) {
         setTranscript(text);
         setHasRecordingData(true);
 
@@ -105,7 +118,11 @@ function App() {
 
         setFlashcards(generatedFlashcards);
       } else if (data.error) {
+        console.error("Transcribe backend error:", data.error);
         alert("Error while transcribing audio");
+      } else {
+        console.error("No transcript field in response:", data);
+        alert("Backend returned no transcript text.");
       }
     } catch (err) {
       console.error(err);
@@ -233,7 +250,6 @@ function App() {
   const goToDashboard = () => setCurrentPage("dashboard");
   const goToHome = () => setCurrentPage("home");
 
-  // shared logout handler
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setCurrentPage("login");
