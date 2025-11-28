@@ -8,6 +8,10 @@ import { LoginPage } from "./figma-ui/components/LoginPage";
 import { HomePage } from "./figma-ui/components/HomePage";
 import { DashboardPage } from "./figma-ui/components/DashboardPage";
 
+// ✅ Base URL for backend (local + deployed)
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://127.0.0.1:5000";
+
 function App() {
   // App routing: login -> home -> dashboard
   const [currentPage, setCurrentPage] = useState("login");
@@ -73,7 +77,7 @@ function App() {
     formData.append("audio", audioBlob, "recording.webm");
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/transcribe", {
+      const response = await fetch(`${API_BASE_URL}/transcribe`, {
         method: "POST",
         body: formData,
       });
@@ -114,7 +118,7 @@ function App() {
     setIsSummarizing(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/summarize", {
+      const response = await fetch(`${API_BASE_URL}/summarize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: transcript }),
@@ -157,7 +161,7 @@ function App() {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/download-pdf", {
+      const response = await fetch(`${API_BASE_URL}/download-pdf`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ summary }),
@@ -229,7 +233,7 @@ function App() {
   const goToDashboard = () => setCurrentPage("dashboard");
   const goToHome = () => setCurrentPage("home");
 
-  // ✅ shared logout handler used by Home + Dashboard
+  // shared logout handler
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setCurrentPage("login");
@@ -250,7 +254,7 @@ function App() {
           onAddDevice={handleAddDevice}
           hasRecordingData={hasRecordingData}
           onNavigateToDashboard={goToDashboard}
-          onLogout={handleLogout}          // 🔴 added
+          onLogout={handleLogout}
         />
       )}
 
@@ -265,7 +269,7 @@ function App() {
           onSummarize={handleSummarize}
           isSummarizing={isSummarizing}
           onDownloadPdf={handleDownloadPdf}
-          onLogout={handleLogout}          // still works in dashboard too
+          onLogout={handleLogout}
         />
       )}
     </>
