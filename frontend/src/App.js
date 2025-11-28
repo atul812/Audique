@@ -1,6 +1,5 @@
 // frontend/src/App.js
 import React, { useState } from "react";
-import { ThemeToggle } from "./figma-ui/components/ThemeProvider";
 import { HomePage } from "./figma-ui/components/HomePage";
 import { DashboardPage } from "./figma-ui/components/DashboardPage";
 import { FlashcardsView } from "./figma-ui/components/FlashcardsView";
