@@ -15,18 +15,20 @@ export function HomePage({
   connectedDevices,
   onAddDevice,
   hasRecordingData,
-  onLogout,              // ✅ accept logout callback
+  onLogout,
 }) {
   return (
     <div
       className="
-        min-h-screen relative z-10
-        bg-gradient-to-b from-[#050116] via-[#08001f] to-[#140032]
-        text-white
+        min-h-screen relative z-10 transition-colors duration-300
+        bg-white text-black
+        dark:bg-gradient-to-b dark:from-[#050116] dark:via-[#08001f] dark:to-[#140032]
+        dark:text-white
       "
     >
+
       {/* Header */}
-      <header className="relative z-20 p-6 border-b border-white/10 backdrop-blur-2xl bg-black/30">
+      <header className="relative z-20 p-6 border-b border-gray-200 dark:border-white/10 backdrop-blur-2xl bg-gray-50/80 dark:bg-black/30">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -45,10 +47,10 @@ export function HomePage({
               </div>
             </motion.div>
             <div>
-              <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-200 to-pink-200 tracking-tight">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-white dark:via-purple-200 dark:to-pink-200 tracking-tight">
                 Audique 
               </h1>
-              <p className="text-gray-400 text-sm">AI-Powered Transcription</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">AI-Powered Transcription</p>
             </div>
           </motion.div>
 
@@ -81,23 +83,23 @@ export function HomePage({
           >
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full blur-3xl opacity-40" />
-              <div className="relative px-6 py-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400">
+              <div className="relative px-6 py-2 bg-gray-100/80 dark:bg-white/10 backdrop-blur-xl border border-gray-300 dark:border-white/20 rounded-full">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 dark:from-purple-400 dark:via-pink-400 dark:to-blue-400">
                   ✨ Next-Gen Recording Technology
                 </span>
               </div>
             </div>
           </motion.div>
 
-          <h2 className="text-6xl md:text-7xl text-white mb-6 tracking-tight">
+          <h2 className="text-6xl md:text-7xl text-gray-900 dark:text-white mb-6 tracking-tight font-bold">
             Record. Transcribe.
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 dark:from-purple-400 dark:via-pink-400 dark:to-blue-400">
               Master Everything.
             </span>
           </h2>
 
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
             Transform classroom lectures into interactive flashcards, smart summaries, and searchable
             transcripts with AI-powered voice recognition.
           </p>
@@ -118,7 +120,7 @@ export function HomePage({
               transition={{ duration: 2, repeat: Infinity }}
             />
 
-            <div className="relative p-8 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl">
+            <div className="relative p-8 bg-gray-50/80 dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-3xl">
               <div className="flex flex-col lg:flex-row items-center gap-8">
                 {/* Recording Button */}
                 <div className="flex-shrink-0">
@@ -166,7 +168,7 @@ export function HomePage({
                   </motion.div>
 
                   <motion.p
-                    className="text-center mt-4 text-white"
+                    className="text-center mt-4 text-gray-900 dark:text-white font-medium"
                     animate={{ opacity: isRecording ? [1, 0.5, 1] : 1 }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
@@ -194,8 +196,8 @@ export function HomePage({
                     animate={{ opacity: 1 }}
                   >
                     <div className="text-center lg:text-left">
-                      <h3 className="text-2xl text-white mb-2">Ready to Record</h3>
-                      <p className="text-gray-300">
+                      <h3 className="text-2xl text-gray-900 dark:text-white mb-2 font-semibold">Ready to Record</h3>
+                      <p className="text-gray-700 dark:text-gray-300">
                         Start capturing your classroom lectures with crystal-clear quality
                       </p>
                     </div>
@@ -225,7 +227,7 @@ export function HomePage({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
         >
-          <h3 className="text-3xl text-white text-center mb-10">Smart Learning Tools</h3>
+          <h3 className="text-3xl text-gray-900 dark:text-white text-center mb-10 font-bold">Smart Learning Tools</h3>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             <PremiumButton
               icon={BookOpen}
@@ -276,14 +278,14 @@ export function HomePage({
         >
           <div className="relative">
             <motion.div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-3xl opacity-20" />
-            <div className="relative p-8 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl">
+            <div className="relative p-8 bg-gray-50/80 dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-3xl">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl">
                   <Share2 className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl text-white">Connected Devices</h3>
-                  <p className="text-gray-300">
+                  <h3 className="text-2xl text-gray-900 dark:text-white font-semibold">Connected Devices</h3>
+                  <p className="text-gray-700 dark:text-gray-300">
                     {connectedDevices.length} device
                     {connectedDevices.length !== 1 ? 's' : ''} active
                   </p>
