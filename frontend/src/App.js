@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./index.css";
 
 import { supabase } from "./supabaseClient";
@@ -8,13 +8,14 @@ import { LoginPage } from "./figma-ui/components/LoginPage";
 import { HomePage } from "./figma-ui/components/HomePage";
 import { DashboardPage } from "./figma-ui/components/DashboardPage";
 
-// ✅ Base URL for backend (local + deployed)
+// Base URL for backend (local + deployed)
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL || "http://127.0.0.1:5000";
 
 function App() {
   // App routing: login -> home -> dashboard
-  const [currentPage, setCurrentPage] = useState("login");
+  // "loading" while we check for an existing session
+  const [currentPage, setCurrentPage] = useState("loading");
 
   // recording + backend state
   const [isRecording, setIsRecording] = useState(false);
@@ -39,6 +40,23 @@ function App() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const levelIntervalRef = useRef(null);
+
+  // --- SESSION PERSISTENCE ---
+  // Check for an existing Supabase session on mount so a page refresh
+  // doesn't force the user back to the login screen.
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentPage(session ? "home" : "login");
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) setCurrentPage("login");
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // --- fake audio level animation for devices ---
   const startAudioLevelSimulation = () => {
@@ -257,6 +275,12 @@ function App() {
 
   return (
     <>
+      {currentPage === "loading" && (
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#050116" }}>
+          <p style={{ color: "#a78bfa" }}>Loading…</p>
+        </div>
+      )}
+
       {currentPage === "login" && (
         <LoginPage onLoginSuccess={() => setCurrentPage("home")} />
       )}
