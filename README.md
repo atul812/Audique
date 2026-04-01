@@ -3,16 +3,16 @@ Audique – AI Powered Speech-to-Text Notes Generator
 Audique is an AI-driven web application that converts spoken lectures and audio content into accurate transcripts, structured notes, summaries, and flashcards in real time.
 The platform is designed to enhance classroom learning, accessibility, and productivity by reducing the need for manual note-taking and making audio content searchable and easy to understand.
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Features](#-features)
-- [Tech Stack](#️-tech-stack)
-- [Installation & Setup](#-installation--setup)
-- [Running Locally](#-running-locally)
-- [System Architecture](#️-system-architecture-overview)
-- [Results & Impact](#-results--impact)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Installation & Setup](#installation--setup)
+- [Running Locally](#running-locally)
+- [System Architecture](#system-architecture)
+- [Results & Impact](#results--impact)
 
-🚀 Features
+## Features
 
 Real-Time Speech to Text – High-accuracy lecture transcription
 
@@ -30,7 +30,7 @@ Secure Authentication – User login and session management
 
 Scalable Architecture – Designed for performance and reliability
 
-🧠 Problem Statement
+Problem Statement
 
 Students often miss important information during lectures due to:
 
@@ -44,7 +44,7 @@ Accessibility challenges
 
 Audique addresses these issues by automatically capturing and organizing lecture content into meaningful study materials.
 
-🏗️ Tech Stack
+## Tech Stack
 Frontend
 
 React
@@ -79,7 +79,7 @@ Supabase Authentication
 
 Render Deployment
 
-## 🛠️ Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 
@@ -197,7 +197,7 @@ yarn start
 
 The frontend will automatically open at `http://localhost:3000`
 
-## 🚀 Running Locally
+## Running Locally
 
 Now you have both servers running:
 
@@ -253,7 +253,7 @@ pip install -r requirements.txt
 - Check that your Supabase project is active
 - Ensure firewall isn't blocking connections
 
-⚙️ System Architecture Overview
+## System Architecture
 
 User records or uploads audio through the browser interface
 
@@ -271,7 +271,7 @@ Flashcards
 
 Processed content is displayed to the user in an organized format
 
-📈 Results & Impact
+## Results & Impact
 
 Improved lecture comprehension
 
