@@ -256,40 +256,41 @@ function App() {
   };
 
   return (
-    <>
-      {currentPage === "login" && (
-        <LoginPage onLoginSuccess={() => setCurrentPage("home")} />
-      )}
+  <div className="bg-white dark:bg-black text-black dark:text-white min-h-screen transition-colors duration-300">
+    {currentPage === "login" && (
+      <LoginPage onLoginSuccess={() => setCurrentPage("home")} />
+    )}
 
-      {currentPage === "home" && (
-        <HomePage
-          isRecording={isRecording}
-          onStartRecording={handleStartRecording}
-          onStopRecording={handleStopRecording}
-          connectedDevices={connectedDevices}
-          onAddDevice={handleAddDevice}
-          hasRecordingData={hasRecordingData}
-          onNavigateToDashboard={goToDashboard}
-          onLogout={handleLogout}
-        />
-      )}
+    {currentPage === "home" && (
+      <HomePage
+        isRecording={isRecording}
+        onStartRecording={handleStartRecording}
+        onStopRecording={handleStopRecording}
+        connectedDevices={connectedDevices}
+        onAddDevice={handleAddDevice}
+        hasRecordingData={hasRecordingData}
+        onNavigateToDashboard={goToDashboard}
+        onLogout={handleLogout}
+      />
+    )}
 
-      {currentPage === "dashboard" && (
-        <DashboardPage
-          onNavigateToHome={goToHome}
-          hasRecordingData={hasRecordingData}
-          transcript={transcript}
-          summary={summary}
-          notes={notes}
-          flashcards={flashcards}
-          onSummarize={handleSummarize}
-          isSummarizing={isSummarizing}
-          onDownloadPdf={handleDownloadPdf}
-          onLogout={handleLogout}
-        />
-      )}
-    </>
-  );
+    {currentPage === "dashboard" && (
+      <DashboardPage
+        onNavigateToHome={goToHome}
+        hasRecordingData={hasRecordingData}
+        transcript={transcript}
+        summary={summary}
+        notes={notes}
+        flashcards={flashcards}
+        onSummarize={handleSummarize}
+        isSummarizing={isSummarizing}
+        onDownloadPdf={handleDownloadPdf}
+        onLogout={handleLogout}
+      />
+    )}
+  </div>
+);
+
 }
 
 export default App;
