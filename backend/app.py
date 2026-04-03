@@ -15,7 +15,7 @@ from language_utils import SUPPORTED_LANGUAGES, detect_language_from_code
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
